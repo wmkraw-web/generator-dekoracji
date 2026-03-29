@@ -1,6 +1,6 @@
 import streamlit as st
 from fpdf import FPDF
-import os
+import os# --- NO
 
 # --- KONFIGURACJA I DESIGN ---
 st.set_page_config(page_title="MagicColor Educator PRO", layout="wide", page_icon="🎨")
@@ -13,46 +13,44 @@ OKAZJE = {
     "🎈 Przedszkolak": {"tekst": "dzielne stawianie pierwszych kroków w przedszkolu", "kolor": "#FF8C00"}
 }
 
-# --- NOWOCZESNY DESIGN PRZYCISKÓW (CSS) ---
+# --- NOWOCZESNY DESIGN (WERSJA POPRAWIONA) ---
 st.markdown("""
     <style>
-    /* Stylowanie zakładek */
+    /* Naprawa kolorów zakładek */
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] { 
         background-color: #f8f9fa; 
         border-radius: 12px 12px 0 0; 
         padding: 12px 25px;
         border: 1px solid #e0e0e0;
+        color: #333 !important; /* Ciemny tekst na nieaktywnej zakładce */
     }
     .stTabs [aria-selected="true"] { 
         background-color: #FF4B4B !important; 
         color: white !important; 
         border: 1px solid #FF4B4B !important;
-        box-shadow: 0px 4px 10px rgba(255, 75, 75, 0.3);
     }
 
-    /* Magia dla przycisków (Generuj i Pobierz) */
+    /* Przyciski - Napis w środku będzie teraz wyraźniejszy */
     div.stButton > button, div.stDownloadButton > button {
         border-radius: 12px !important;
         height: 3.5em !important;
         width: 100% !important;
-        font-weight: 600 !important;
+        font-weight: 800 !important; /* Grubszy tekst */
         text-transform: uppercase !important;
-        letter-spacing: 1px !important;
         transition: all 0.3s ease !important;
         border: 2px solid #FF4B4B !important;
         background-color: white !important;
         color: #FF4B4B !important;
     }
 
-    div.stButton > button:hover, div.stDownloadButton > button:hover {
+    /* Efekt po najechaniu - przycisk robi się pełny */
+    div.stButton > button:hover {
         background-color: #FF4B4B !important;
         color: white !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0px 5px 15px rgba(255, 75, 75, 0.4) !important;
     }
     
-    /* Przycisk pobierania (zielony akcent) */
+    /* Przycisk pobierania - zielony i wyraźny */
     div.stDownloadButton > button {
         border: 2px solid #28a745 !important;
         color: #28a745 !important;
@@ -60,9 +58,11 @@ st.markdown("""
     div.stDownloadButton > button:hover {
         background-color: #28a745 !important;
         color: white !important;
-        border: 2px solid #28a745 !important;
-        box-shadow: 0px 5px 15px rgba(40, 167, 69, 0.4) !important;
     }
+
+    /* Naprawa białych tekstów w ciemnym motywie Streamlit */
+    h1, h2, h3, p, span { color: #f0f2f6 !important; }
+    .stMarkdown div p { color: #f0f2f6 !important; }
     </style>
     """, unsafe_allow_html=True)
 
