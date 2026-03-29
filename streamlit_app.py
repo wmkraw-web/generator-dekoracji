@@ -2,7 +2,7 @@ import streamlit as st
 from fpdf import FPDF
 import os
 
-# --- STYLE ---
+# --- DESIGN ---
 st.set_page_config(page_title="EduStudio Ultra 2026", layout="wide")
 st.markdown("""
     <style>
@@ -16,7 +16,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- REJESTR OKAZJI ---
+# --- BAZA ---
 KALENDARZ_PRO = {
     "Pasowanie na Ucznia": "Dziś pasowanie, wielkie wydarzenie, przed Tobą nauka i marzeń spełnienie!",
     "Dzień Kropki": "Od małej kropki talent się zaczyna, każda kropka to Twoja wielka mina!",
@@ -24,10 +24,9 @@ KALENDARZ_PRO = {
     "Dzień Ziemi": "Ziemia to dom nasz jedyny, dbajmy o nią dla wspólnej rodziny."
 }
 
-# --- GENERATOR PDF (VECTOR MODE) ---
-def create_pdf_vector(mode, items, col, za_co, data, tytul, styl):
+# --- GENERATOR PDF (BRUTE FORCE OUTLINE) ---
+def create_pdf_brute_force(mode, items, col, za_co, data, tytul, styl):
     pdf = FPDF(orientation='L' if mode=='dyp' else 'P', unit='mm', format='A4')
-    # Używamy Helvetica (standardowa), by uniknąć problemów z ładowaniem fontów
     fn = "Helvetica"
     r, g, b = int(col[1:3], 16), int(col[3:5], 16), int(col[5:7], 16)
 
@@ -44,34 +43,30 @@ def create_pdf_vector(mode, items, col, za_co, data, tytul, styl):
             pdf.multi_cell(0, 10, za_co, align='C')
             pdf.set_y(178); pdf.set_font(fn, size=12); pdf.set_x(30); pdf.cell(0, 10, f"Data: {data}")
         else:
-            pdf.set_line_width(1.5); pdf.rect(7, 7, 196, 285)
+            pdf.set_line_width(1); pdf.rect(7, 7, 196, 285)
             txt = name.upper()
-            
-            # Parametry napisu
             pdf.set_font(fn, 'B', size=500)
-            pdf.set_y(50)
             
             if styl == "Kontur":
-                # METODA WEKTOROWA (Najbezpieczniejsza na świecie)
-                pdf.set_line_width(1.5)
-                # Ustawiamy przezroczyste wypełnienie i kolorowy obrys
-                # Składnia: 'D' oznacza tylko obrys (Draw)
-                pdf.set_text_color(r, g, b) # fallback
-                try:
-                    # Rysujemy tekst jako kontur (render mode 1 to standard PDF)
-                    with pdf.local_context(text_render_mode=1, draw_color=(r, g, b), line_width=1):
-                        pdf.cell(190, 210, txt, align='C')
-                except:
-                    # Jeśli local_context nie zadziała (stara wersja), rysujemy cell
-                    pdf.cell(190, 210, txt, align='C')
+                # NAJBARDZIEJ AGRESYWNA METODA: RĘCZNE NADPISANIE STRUKTURY PDF
+                pdf.set_draw_color(r, g, b)
+                pdf.set_line_width(0.7)
+                # Ustawiamy kolor tekstu na biały (tło) i używamy komendy do obrysu
+                pdf.set_text_color(255, 255, 255)
+                # Wymuszamy tryb renderowania tekstu 1 (tylko obrys) przez surową komendę PDF
+                pdf._out("1 Tr") 
+                pdf.set_y(50)
+                pdf.cell(190, 210, txt, align='C')
+                pdf._out("0 Tr") # Powrót do normalnego trybu
             else:
                 pdf.set_text_color(r, g, b)
+                pdf.set_y(50)
                 pdf.cell(190, 210, txt, align='C')
             
     return bytes(pdf.output())
 
 # --- UI ---
-st.title("🚀 EduStudio Ultra v8.3")
+st.title("🚀 EduStudio Ultra v8.4 - Final")
 
 if 'liter_txt' not in st.session_state: st.session_state['liter_txt'] = "WITAJ"
 if 'dyp_imiona' not in st.session_state: st.session_state['dyp_imiona'] = "Jan Kowalski"
@@ -88,7 +83,7 @@ if nav == "🔠 Napisy":
         name_list = [c for c in st.session_state['liter_txt'] if not c.isspace()]
         if st.button("GENERUJ PDF"):
             if name_list:
-                out_l = create_pdf_vector('lit', name_list, kol_l, "", "", "", styl_l)
+                out_l = create_pdf_brute_force('lit', name_list, kol_l, "", "", "", styl_l)
                 st.download_button(f"📥 POBIERZ PDF", out_l, "napisy.pdf")
     with c2:
         pierwsza = st.session_state['liter_txt'][0].upper() if st.session_state['liter_txt'] else "?"
@@ -109,7 +104,7 @@ else:
         kol_d = st.color_picker("Kolor:", "#f59e0b")
         name_list_d = [i.strip() for i in st.session_state['dyp_imiona'].split('\n') if i.strip()]
         if st.button("GENERUJ DYPLOMY"):
-            out_d = create_pdf_vector('dyp', name_list_d, kol_d, final_tresc, miejsc, okazja, "")
+            out_d = create_pdf_brute_force('dyp', name_list_d, kol_d, final_tresc, miejsc, okazja, "")
             st.download_button("📥 POBIERZ PDF", out_d, "dyplomy.pdf")
             
     p_imie = st.session_state['dyp_imiona'].split('\n')[0] if st.session_state['dyp_imiona'] else "Uczeń"
