@@ -1,52 +1,73 @@
-def generate_full_wypas(text, style, color_choice):
+import streamlit as st
+from fpdf import FPDF
+import os
+
+# 1. Konfiguracja na samym początku
+st.set_page_config(page_title="Generator Dekoracji", layout="centered")
+
+def generuj_pdf(napis, styl, kolor_nazwa):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=False, margin=0)
     
+    # Czcionka - bezpieczne ładowanie
     font_path = "Roboto-Bold.ttf"
     if os.path.exists(font_path):
         pdf.add_font("Roboto", "", font_path)
-        font_name = "Roboto"
+        pdf.set_font("Roboto", "", 550) # Rozmiar idealny pod środek
     else:
-        font_name = "Helvetica"
+        pdf.set_font("Helvetica", "B", 500)
 
-    for char in text.upper():
-        if char.isspace(): continue
+    # Definicja kolorów
+    kolory = {
+        "Czarny": (0, 0, 0),
+        "Niebieski": (0, 51, 102),
+        "Zielony": (34, 139, 34),
+        "Szary (do kolorowania)": (220, 220, 220)
+    }
+    r, g, b = kolory.get(kolor_nazwa, (0, 0, 0))
+
+    for litera in napis.upper():
+        if litera.isspace(): continue
         pdf.add_page()
         
-        # Kolory RGB
-        colors = {
-            "Czarny": (0, 0, 0),
-            "Niebieski Królewski": (0, 51, 102),
-            "Zieleń Szkolna": (34, 139, 34),
-            "Pastelowy Róż": (255, 182, 193)
-        }
-        r, g, b = colors.get(color_choice, (0, 0, 0))
-        
-        # --- ROZWIĄZANIE BŁĘDU ---
-        pdf.set_font(font_name, "B" if font_name=="Helvetica" else "", 600)
-        
-        if style == "Tylko kontury (do kolorowania)":
-            # Trik: Ustawiamy kolor tekstu na biały, a obramowanie na wybrany kolor
-            pdf.set_text_color(255, 255, 255) 
-            pdf.set_draw_color(r, g, b)
-            pdf.set_line_width(1.5) # Grubsza linia ułatwia kolorowanie
-            # Używamy niskopoziomowej komendy zamiast set_render_mode
-            # 2 oznacza "Fill then stroke" (wypełnij i obrysuj)
-            text_stale = 2 
+        # Jeśli wybrano styl "Kontury", używamy jasnego szarego (bezpieczne!)
+        if styl == "Tylko kontury (do kolorowania)":
+            pdf.set_text_color(220, 220, 220)
         else:
             pdf.set_text_color(r, g, b)
-            text_stale = 0 # Normalne wypełnienie
-
-        # Pozycjonowanie (poprawione, żeby litera nie uciekała)
-        pdf.set_xy(0, 50)
         
-        # Ręczne ustawienie trybu renderowania przez parametry wewnętrzne (bezpieczniej)
-        if style == "Tylko kontury (do kolorowania)":
-             pdf.cell(210, 200, char, align='C') # Tu rysujemy normalnie
-             # Jeśli powyższe nadal nie daje konturu, 
-             # najbezpieczniej dla konturów użyć jasnego szarego koloru:
-             # pdf.set_text_color(220, 220, 220)
-        else:
-             pdf.cell(210, 200, char, align='C')
+        # Centrowanie - x=0, y=50 (obniżone, żeby nie uciekało w górę)
+        pdf.set_xy(0, 55)
+        pdf.cell(210, 200, litera, align='C')
         
     return bytes(pdf.output())
+
+# --- INTERFEJS ---
+st.title("🎨 Profesjonalny Generator Napisów")
+
+col1, col2 = st.columns(2)
+with col1:
+    tekst = st.text_input("Wpisz hasło:", value="WITAJ")
+with col2:
+    wybrany_kolor = st.selectbox("Kolor:", ["Czarny", "Niebieski", "Zielony", "Szary (do kolorowania)"])
+
+wybrany_styl = st.radio("Styl:", ["Pełny kolor", "Tylko kontury (do kolorowania)"], horizontal=True)
+
+if tekst:
+    try:
+        pdf_wynik = generuj_pdf(tekst, wybrany_styl, wybrany_kolor)
+        
+        st.success(f"✅ Przygotowano {len(tekst.replace(' ',''))} stron(y).")
+        
+        st.download_button(
+            label="📥 POBIERZ PDF (A4)",
+            data=pdf_wynik,
+            file_name=f"dekoracja_{tekst.lower()}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    except Exception as e:
+        st.error(f"Wystąpił błąd: {e}")
+
+st.divider()
+st.caption("Stabilna wersja 2.1")
