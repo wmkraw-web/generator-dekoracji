@@ -5,7 +5,6 @@ import os
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="Nauczycielskie Narzędzia PRO", layout="wide", page_icon="🍎")
 
-# Funkcja ładowania czcionki (bezpieczna)
 def setup_font(pdf):
     font_path = "Roboto-Bold.ttf"
     if os.path.exists(font_path):
@@ -18,8 +17,6 @@ def gen_napis(tekst, kolor_hex, styl):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=False, margin=0)
     font_name = setup_font(pdf)
-    
-    # Konwersja hex na RGB
     r = int(kolor_hex.lstrip('#')[:2], 16)
     g = int(kolor_hex.lstrip('#')[2:4], 16)
     b = int(kolor_hex.lstrip('#')[4:6], 16)
@@ -27,51 +24,57 @@ def gen_napis(tekst, kolor_hex, styl):
     for char in tekst.upper():
         if char.isspace(): continue
         pdf.add_page()
-        
         if styl == "Tylko kontury (szary)":
             pdf.set_text_color(220, 220, 220)
         else:
             pdf.set_text_color(r, g, b)
-            
         pdf.set_font(font_name, size=600 if font_name == "Roboto" else 500)
         pdf.set_xy(0, 50)
         pdf.cell(210, 200, char, align='C')
     return bytes(pdf.output())
 
-# --- GENERATOR DYPLOMÓW ---
-def gen_dyplom(imie, za_co, data, kolor_ramki):
-    pdf = FPDF(orientation='L', unit='mm', format='A4') # Dyplom poziomo
-    pdf.add_page()
+# --- GENERATOR DYPLOMÓW (WERSJA Z LISTĄ) ---
+def gen_dyplomy_seryjne(lista_imion, za_co, data, kolor_ramki):
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
     font_name = setup_font(pdf)
     
-    # Ramka
-    pdf.set_line_width(2)
-    pdf.set_draw_color(int(kolor_ramki.lstrip('#')[:2], 16), 
-                       int(kolor_ramki.lstrip('#')[2:4], 16), 
-                       int(kolor_ramki.lstrip('#')[4:6], 16))
-    pdf.rect(10, 10, 277, 190) # Ozdobna obwódka
-    
-    # Tekst dyplomu
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font(font_name, size=50)
-    pdf.set_y(40)
-    pdf.cell(0, 20, "DYPLOM", align='C', ln=1)
-    
-    pdf.set_font(font_name, size=20)
-    pdf.cell(0, 20, "dla", align='C', ln=1)
-    
-    pdf.set_font(font_name, size=40)
-    pdf.set_text_color(int(kolor_ramki.lstrip('#')[:2], 16), 0, 0)
-    pdf.cell(0, 30, imie, align='C', ln=1)
-    
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font(font_name, size=20)
-    pdf.multi_cell(0, 15, f"za {za_co}", align='C')
-    
-    pdf.set_y(170)
-    pdf.set_font(font_name, size=12)
-    pdf.cell(0, 10, f"Data: {data}", align='L')
-    pdf.cell(0, 10, "Podpis wychowawcy: ........................", align='R')
+    r = int(kolor_ramki.lstrip('#')[:2], 16)
+    g = int(kolor_ramki.lstrip('#')[2:4], 16)
+    b = int(kolor_ramki.lstrip('#')[4:6], 16)
+
+    imiona = [i.strip() for i in lista_imion.split('\n') if i.strip()]
+
+    for imie in imiona:
+        pdf.add_page()
+        # Ramka
+        pdf.set_line_width(2)
+        pdf.set_draw_color(r, g, b)
+        pdf.rect(10, 10, 277, 190)
+        
+        # Tekst
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font(font_name, size=50)
+        pdf.set_y(40)
+        pdf.cell(0, 20, "DYPLOM", align='C', ln=1)
+        
+        pdf.set_font(font_name, size=20)
+        pdf.cell(0, 15, "dla", align='C', ln=1)
+        
+        pdf.set_font(font_name, size=40)
+        pdf.set_text_color(r, g, b)
+        pdf.cell(0, 30, imie, align='C', ln=1)
+        
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font(font_name, size=22)
+        pdf.set_y(120)
+        pdf.multi_cell(0, 12, f"za {za_co}", align='C')
+        
+        pdf.set_y(170)
+        pdf.set_font(font_name, size=12)
+        pdf.set_x(20)
+        pdf.cell(0, 10, f"Data: {data}", align='L')
+        pdf.set_x(200)
+        pdf.cell(0, 10, "Podpis: ........................", align='L')
     
     return bytes(pdf.output())
 
@@ -79,43 +82,37 @@ def gen_dyplom(imie, za_co, data, kolor_ramki):
 st.title("🍎 Centrum Nauczyciela PRO")
 tab1, tab2, tab3 = st.tabs(["🔠 Wielkie Litery A4", "🏆 Generator Dyplomów", "✉️ Podziękowania"])
 
-# --- TAB 1: NAPISY ---
 with tab1:
-    st.subheader("Generator dekoracji na gazetki")
+    st.subheader("Dekoracje na gazetki")
     c1, c2, c3 = st.columns([2,1,1])
     with c1:
         txt = st.text_input("Wpisz hasło:", "WITAJ", key="t1")
     with c2:
-        kol = st.color_picker("Wybierz kolor:", "#003366")
+        kol = st.color_picker("Kolor liter:", "#003366")
     with c3:
         staly = st.selectbox("Styl:", ["Pełny kolor", "Tylko kontury (szary)"])
-    
     if st.button("Generuj Napis"):
         out = gen_napis(txt, kol, staly)
-        st.download_button("📥 Pobierz Napis (PDF)", out, f"napis_{txt}.pdf", "application/pdf")
+        st.download_button("📥 Pobierz Napis (PDF)", out, "napis.pdf", "application/pdf")
 
-# --- TAB 2: DYPLOMY ---
 with tab2:
-    st.subheader("Szybki dyplom")
-    colA, colB = st.columns(2)
+    st.subheader("Seryjne generowanie dyplomów")
+    colA, colB = st.columns([1, 1])
     with colA:
-        d_imie = st.text_input("Imię i Nazwisko ucznia:")
-        d_za_co = st.text_area("Za co (treść):", "wzorową postawę i wybitne osiągnięcia w nauce")
-    with colB:
-        d_data = st.text_input("Data i miejscowość:", "Kraków, 2026")
-        d_kolor = st.color_picker("Kolor akcentów:", "#FFD700") # Złoty
-    
-    if st.button("Generuj Dyplom"):
-        if d_imie:
-            out_d = gen_dyplom(d_imie, d_za_co, d_data, d_kolor)
-            st.success(f"Dyplom dla {d_imie} gotowy!")
-            st.download_button("📥 Pobierz Dyplom (PDF)", out_d, "dyplom.pdf", "application/pdf")
+        tryb = st.radio("Tryb wpisywania:", ["Jeden uczeń", "Lista uczniów (wielu naraz)"])
+        if tryb == "Jeden uczeń":
+            lista_imion = st.text_input("Imię i nazwisko:")
         else:
-            st.warning("Wpisz imię dziecka!")
+            lista_imion = st.text_area("Wklej listę (jedno imię pod drugim):", "Jan Kowalski\nAnna Nowak\nOlaf Budowniczy")
+    
+    with colB:
+        d_za_co = st.text_area("Treść (za co):", "wzorową postawę i aktywny udział w zajęciach")
+        d_data = st.text_input("Data i miejscowość:", "Kraków, 2026")
+        d_kolor = st.color_picker("Kolor ramki i imienia:", "#C41E3A")
 
-# --- TAB 3: PODZIĘKOWANIA ---
-with tab3:
-    st.info("Ta funkcja będzie dostępna wkrótce. Tutaj dodamy zaproszenia na uroczystości!")
-
-st.divider()
-st.caption("Aplikacja stworzona dla wsparcia pracy kreatywnego nauczyciela.")
+    if st.button("Generuj wszystkie dyplomy"):
+        if lista_imion:
+            with st.spinner("Trwa generowanie plików..."):
+                pdf_dyplomy = gen_dyplomy_seryjne(lista_imion, d_za_co, d_data, d_kolor)
+                st.success(f"Gotowe! Wygenerowano dyplomy dla wszystkich osób z listy.")
+                st.download_button("📥 POBIERZ WSZYSTKIE DYPLOMY (JEDEN PDF)", pdf_dyplomy, "dyplomy_zbiorcze.pdf
