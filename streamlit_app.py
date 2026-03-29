@@ -14,7 +14,6 @@ st.markdown("""
         padding: 25px !important; 
         border-radius: 15px !important;
     }
-    label, p, h1, h2, h3 { color: #e6edf3 !important; }
     
     /* BIAŁA KARTA PODGLĄDU */
     .preview-box { 
@@ -28,9 +27,8 @@ st.markdown("""
         justify-content: center; 
         align-items: center;
         box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        color: black !important;
     }
-    /* Tekst pomocniczy w podglądzie */
-    .preview-label { color: #8b949e !important; font-size: 12px; margin-top: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -59,7 +57,6 @@ def create_pdf(mode, items, col, za_co, data, tytul):
     for imie in items:
         pdf.add_page()
         pdf.set_draw_color(r, g, b)
-        # Solidna rama seryjna
         pdf.set_line_width(2)
         pdf.rect(7, 7, 285 if mode=='dyp' else 196, 198 if mode=='dyp' else 285)
         
@@ -82,49 +79,47 @@ def create_pdf(mode, items, col, za_co, data, tytul):
 # --- 4. INTERFEJS ---
 st.title("🍎 EduStudio PRO 2026")
 
-menu = st.sidebar.radio("WYBIERZ NARZĘDZIE:", ["LITERY NA ŚCIANĘ", "DYPLOMY KLASOWE"])
+menu = st.sidebar.radio("WYBIERZ NARZĘDZIE:", ["LITERY", "DYPLOMY"])
 
-if menu == "LITERY NA ŚCIANĘ":
+if menu == "LITERY":
     c1, c2 = st.columns([1, 1.5])
     with c1:
-        st.subheader("Ustawienia")
-        napis = st.text_input("Treść hasła:", "WITAJ")
-        kolor = st.color_picker("Kolor napisu:", "#4facfe")
-        if st.button("GENERUJ NAPIS PDF"):
+        napis = st.text_input("Hasło:", "WITAJ")
+        kolor = st.color_picker("Kolor:", "#FF0000")
+        if st.button("GENERUJ PDF"):
             res = create_pdf('lit', [c for c in napis if not c.isspace()], kolor, "", "", "")
             st.download_button("POBIERZ PLIK", res, "napis.pdf")
     with c2:
         pierwsza_litera = napis[0].upper() if napis else "?"
+        # Kluczowa zmiana: kolor jest wstrzykiwany bezpośrednio w style elementu
         st.markdown(f"""
             <div class="preview-box">
-                <h1 style="font-size: 280px; color: {kolor} !important; margin: 0; line-height: 1;">
+                <div style="font-size: 280px; color: {kolor}; font-weight: bold; font-family: sans-serif;">
                     {pierwsza_litera}
-                </h1>
-                <p class="preview-label">Podgląd koloru na arkuszu A4</p>
+                </div>
             </div>
         """, unsafe_allow_html=True)
 
 else:
-    okazja = st.selectbox("Okazja z kalendarza:", list(KALENDARZ.keys()))
+    okazja = st.selectbox("Okazja:", list(KALENDARZ.keys()))
     c1, c2 = st.columns(2)
     with c1:
-        lista_n = st.text_area("Lista uczniów (jeden pod drugim):", "Jan Kowalski\nAnna Nowak")
-        za_co_n = st.text_area("Treść wyróżnienia:", value=KALENDARZ[okazja])
+        lista_n = st.text_area("Uczniowie:", "Jan Kowalski\nAnna Nowak")
+        za_co_n = st.text_area("Za co:", value=KALENDARZ[okazja])
     with c2:
-        data_n = st.text_input("Miejscowość i data:", "Leżajsk, 2026")
-        kolor_d = st.color_picker("Kolor motywu dyplomu:", "#ffaa00")
-        if st.button("WYGENERUJ WSZYSTKIE DYPLOMY"):
+        data_n = st.text_input("Data:", "Leżajsk, 2026")
+        kolor_d = st.color_picker("Kolor dyplomu:", "#FFD700")
+        if st.button("GENERUJ DYPLOMY"):
             u_lista = [i.strip() for i in lista_n.split('\n') if i.strip()]
             res_d = create_pdf('dyp', u_lista, kolor_d, za_co_n, data_n, okazja)
             st.download_button("POBIERZ PACZKĘ PDF", res_d, "dyplomy.pdf")
     
-    st.markdown("### Podgląd pierwszej strony")
     p_imie = lista_n.split('\n')[0] if lista_n else "Imię Nazwisko"
     st.markdown(f"""
-        <div class="preview-box" style="border: 12px double {kolor_d};">
-            <h2 style="color: {kolor_d} !important; margin: 0;">{okazja.upper()}</h2>
-            <p style="color: #666 !important; margin: 5px 0;">dla</p>
-            <h1 style="color: {kolor_d} !important; margin: 10px 0;">{p_imie}</h1>
-            <p style="color: #333 !important; font-size: 18px;">za {za_co_n}</p>
+        <div class="preview-box" style="border: 15px double {kolor_d};">
+            <h2 style="color: {kolor_d};">{okazja.upper()}</h2>
+            <p style="color: #666;">dla</p>
+            <h1 style="color: {kolor_d};">{p_imie}</h1>
+            <p style="color: #333;">za {za_co_n}</p>
         </div>
     """, unsafe_allow_html=True)
