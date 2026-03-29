@@ -1,35 +1,37 @@
 import streamlit as st
-import os
 import random
+import os
 
-# --- INTELIGENTNY IMPORT FPDF ---
+# --- PANCERNY IMPORT ---
 try:
+    # fpdf2 instaluje się jako pakiet fpdf, ale to nowsza wersja
     from fpdf import FPDF
 except ImportError:
-    st.error("Błąd: Biblioteka FPDF nie została znaleziona. Upewnij się, że w pliku requirements.txt jest wpis: fpdf2")
+    st.error("Instalowanie silnika PDF... Odśwież stronę za 30 sekund.")
+    st.info("Jeśli błąd nie znika, sprawdź czy w requirements.txt masz wpisane: fpdf2")
     st.stop()
 
-# --- KONFIGURACJA ---
-st.set_page_config(page_title="EduStudio Master 2026", layout="wide")
+# --- KONFIGURACJA UI ---
+st.set_page_config(page_title="EduStudio PRO 2026", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a !important; color: white !important; }
-    [data-testid="stVerticalBlockBorderWrapper"] { background-color: #1e293b !important; border: 1px solid #334155 !important; padding: 30px !important; border-radius: 25px !important; }
-    .canvas-pro { background: white !important; border-radius: 20px; padding: 40px; min-height: 500px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #e2e8f0; }
+    [data-testid="stVerticalBlockBorderWrapper"] { background-color: #1e293b !important; border: 1px solid #334155 !important; padding: 25px !important; border-radius: 20px !important; }
+    .canvas-pro { background: white !important; border-radius: 20px; padding: 40px; min-height: 480px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 4px solid #e2e8f0; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- BAZA ---
 RYMOWANKI = {
-    "Pasowanie na Ucznia": "Dzielny uczniu, ślubuj szczerze, w Twoją mądrość mocno wierzę!",
+    "Pasowanie": "Dzielny uczniu, ślubuj szczerze, w Twoją mądrość mocno wierzę!",
     "Dzień Kropki": "Mała kropka, wielka sprawa, to jest twórcza dziś zabawa!",
     "Dzień Dinozaura": "T-Rex, diplodok i inne gady, dają nam dzisiaj ważne rady!",
     "Dzień Ziemi": "Małe ręce, wielkie chęci, niech ekologia Cię zakręci!"
 }
 
 # --- GENERATOR PDF ---
-def generate_pdf(mode, items, col, za_co, data, tytul, styl):
+def create_pdf(mode, items, col, za_co, data, tytul, styl):
     pdf = FPDF(orientation='L' if mode=='dyp' else 'P', unit='mm', format='A4')
     pdf.set_margins(0, 0, 0)
     pdf.set_auto_page_break(False)
@@ -51,7 +53,7 @@ def generate_pdf(mode, items, col, za_co, data, tytul, styl):
             pdf.set_font("Helvetica", 'B', size=500)
             if styl == "Kontur":
                 pdf.set_text_color(255, 255, 255); pdf.set_draw_color(r, g, b)
-                pdf._out("1 Tr")
+                pdf._out("1 Tr") # Outline mode
                 pdf.set_y(50); pdf.cell(210, 210, name.upper(), align='C')
                 pdf._out("0 Tr")
             else:
@@ -60,47 +62,47 @@ def generate_pdf(mode, items, col, za_co, data, tytul, styl):
     return bytes(pdf.output())
 
 # --- UI ---
-if 'ai_text' not in st.session_state: st.session_state.ai_text = "Za wzorową postawę i uśmiech każdego dnia!"
+if 'ai_txt' not in st.session_state: st.session_state.ai_txt = "Za wspaniałą postawę!"
 
-st.title("🎓 EduStudio v9.3")
-nav = st.sidebar.radio("Menu", ["Napisy", "Dyplomy"])
+st.title("🎓 EduStudio v9.4 Final")
+nav = st.sidebar.radio("Narzędzie:", ["Napisy A4", "Dyplomy AI"])
 
-if nav == "Napisy":
+if nav == "Napisy A4":
     c1, c2 = st.columns([1, 1.5])
     with c1:
         txt = st.text_input("Hasło:", "WITAJ")
-        kol = st.color_picker("Kolor:", "#6366f1", key="k_nap")
+        kol = st.color_picker("Kolor:", "#6366f1", key="kn")
         stl = st.radio("Styl:", ["Pełny", "Kontur"])
         if st.button("Generuj PDF"):
-            out = generate_pdf('lit', [c for c in txt if not c.isspace()], kol, "", "", "", stl)
-            st.download_button("Pobierz PDF", out, "napisy.pdf")
+            o = create_pdf('lit', [c for c in txt if not c.isspace()], kol, "", "", "", stl)
+            st.download_button("📥 Pobierz", o, "napis.pdf")
     with c2:
-        char = txt[0].upper() if txt else "?"
-        strk = f"-webkit-text-stroke: 4px {kol}; color: white;" if stl == "Kontur" else f"color: {kol};"
-        st.markdown(f'<div class="canvas-pro"><h1 style="font-size:300px; {strk}">{char}</h1></div>', unsafe_allow_html=True)
+        l = txt[0].upper() if txt else "?"
+        sk = f"-webkit-text-stroke: 4px {kol}; color: white;" if stl == "Kontur" else f"color: {kol};"
+        st.markdown(f'<div class="canvas-pro"><h1 style="font-size:300px; {sk}">{l}</h1></div>', unsafe_allow_html=True)
 
 else:
     okz = st.selectbox("Wybierz okazję:", list(RYMOWANKI.keys()))
-    if st.button("✨ Generuj treść AI"):
-        st.session_state.ai_text = RYMOWANKI[okz]
+    if st.button("✨ AI: Generuj rymowankę"):
+        st.session_state.ai_txt = RYMOWANKI[okz]
     
     colA, colB = st.columns(2)
     with colA:
         imiona = st.text_area("Lista dzieci:", "Jan Kowalski")
-        tresc = st.text_area("Tekst dyplomu:", value=st.session_state.ai_text)
+        tresc = st.text_area("Tekst:", value=st.session_state.ai_txt)
     with colB:
-        dat = st.text_input("Data:", "Leżajsk, 2026")
-        k_d = st.color_picker("Kolor:", "#f59e0b", key="k_dyp")
+        dat = st.text_input("Miejscowość/Data:", "Leżajsk, 2026")
+        k_d = st.color_picker("Kolor dyplomu:", "#f59e0b", key="kd")
         if st.button("Generuj Dyplomy"):
-            u_l = [i.strip() for i in imiona.split('\n') if i.strip()]
-            out_d = generate_pdf('dyp', u_l, k_d, tresc, dat, okz, "")
-            st.download_button("Pobierz dyplomy", out_d, "dyplomy.pdf")
+            u = [i.strip() for i in imiona.split('\n') if i.strip()]
+            o_d = create_pdf('dyp', u, k_d, tresc, dat, okz, "")
+            st.download_button("📥 Pobierz paczkę", o_d, "dyplomy.pdf")
             
-    p_imie = imiona.split('\n')[0] if imiona else "Uczeń"
+    p_im = imiona.split('\n')[0] if imiona else "Uczeń"
     st.markdown(f"""
         <div class="canvas-pro" style="border: 10px double {k_d}">
             <h2 style="color:{k_d}">{okz.upper()}</h2>
-            <h1 style="color:{k_d}; margin:20px 0;">{p_imie}</h1>
-            <p style="color:black; text-align:center; padding:0 20px;">za {tresc}</p>
+            <h1 style="color:{k_d}; margin:20px 0;">{p_im}</h1>
+            <p style="color:black; text-align:center;">za {tresc}</p>
         </div>
     """, unsafe_allow_html=True)
