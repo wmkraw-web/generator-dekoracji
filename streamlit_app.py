@@ -2,7 +2,7 @@ import streamlit as st
 from fpdf import FPDF
 import os
 
-# --- DESIGN ---
+# --- STYLE ---
 st.set_page_config(page_title="EduStudio Ultra 2026", layout="wide")
 st.markdown("""
     <style>
@@ -16,48 +16,78 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- BAZA ---
 KALENDARZ_PRO = {
-    "Pasowanie na Ucznia": "Dziś pasowanie, wielkie wydarzenie, przed Tobą nauka i marzeń spełnienie!",
-    "Dzień Kropki": "Od małej kropki talent się zaczyna, każda kropka to Twoja wielka mina!",
-    "Dzień Dinozaura": "Dinozaury wielkie były, przez wieki w ziemi kości skryły.",
-    "Dzień Ziemi": "Ziemia to dom nasz jedyny, dbajmy o nią dla wspólnej rodziny."
+    "Pasowanie na Ucznia": "uroczyste ślubowanie i wstąpienie do społeczności szkolnej",
+    "Dzień Kropki": "odkrywanie talentów, wielką kreatywność i odwagę",
+    "Dzień Dinozaura": "zdobycie wiedzy o prehistorycznym świecie",
+    "Dzień Ziemi": "postawę proekologiczną i dbanie o naszą planetę"
 }
 
-# --- GENERATOR PDF (BRUTE FORCE OUTLINE) ---
-def create_pdf_brute_force(mode, items, col, za_co, data, tytul, styl):
+# --- GENERATOR PDF (FIXED & SEPARATED) ---
+def create_pdf_final_fix(mode, items, col, za_co, data, tytul, styl):
     pdf = FPDF(orientation='L' if mode=='dyp' else 'P', unit='mm', format='A4')
     fn = "Helvetica"
     r, g, b = int(col[1:3], 16), int(col[3:5], 16), int(col[5:7], 16)
 
     for name in items:
         pdf.add_page()
-        pdf.set_draw_color(r, g, b)
         
         if mode == 'dyp':
-            pdf.set_line_width(2); pdf.rect(7, 7, 285, 198)
-            pdf.set_text_color(r, g, b); pdf.set_font(fn, 'B', size=50)
-            pdf.set_y(35); pdf.cell(0, 20, tytul.upper(), align='C', ln=1)
-            pdf.set_font(fn, 'B', size=55); pdf.set_y(85); pdf.cell(0, 30, name.upper(), align='C', ln=1)
-            pdf.set_y(125); pdf.set_text_color(50, 50, 50); pdf.set_font(fn, size=20)
-            pdf.multi_cell(0, 10, za_co, align='C')
-            pdf.set_y(178); pdf.set_font(fn, size=12); pdf.set_x(30); pdf.cell(0, 10, f"Data: {data}")
+            # --- TRYB DYPLOMU (Zawsze pełny, bez błędów konturu) ---
+            pdf.set_draw_color(r, g, b)
+            pdf.set_line_width(2)
+            pdf.rect(10, 10, 277, 190) # Ramka główna
+            pdf.set_line_width(0.5)
+            pdf.rect(12, 12, 273, 186) # Ramka wewnętrzna
+            
+            # Tytuł
+            pdf.set_text_color(r, g, b)
+            pdf.set_font(fn, 'B', size=45)
+            pdf.set_y(35)
+            pdf.cell(0, 20, tytul.upper(), align='C', ln=1)
+            
+            # Napis "dla"
+            pdf.set_text_color(100, 100, 100)
+            pdf.set_font(fn, size=18)
+            pdf.cell(0, 10, "dla", align='C', ln=1)
+            
+            # Imię (GIGANT)
+            pdf.set_text_color(r, g, b)
+            pdf.set_font(fn, 'B', size=55)
+            pdf.set_y(80)
+            pdf.cell(0, 30, name.upper(), align='C', ln=1)
+            
+            # Treść
+            pdf.set_y(120)
+            pdf.set_text_color(40, 40, 40)
+            pdf.set_font(fn, size=22)
+            pdf.multi_cell(0, 12, f"za {za_co}", align='C')
+            
+            # Stopka
+            pdf.set_y(175)
+            pdf.set_font(fn, size=12)
+            pdf.set_x(25)
+            pdf.cell(100, 10, f"Miejscowość i data: {data}", align='L')
+            pdf.set_x(180)
+            pdf.cell(100, 10, "Podpis: ..........................", align='L')
+            
         else:
-            pdf.set_line_width(1); pdf.rect(7, 7, 196, 285)
+            # --- TRYB LITER (Z obsługą konturu) ---
+            pdf.set_draw_color(r, g, b)
+            pdf.set_line_width(1)
+            pdf.rect(7, 7, 196, 285)
+            
+            pdf.set_font(fn, 'B', size=550)
             txt = name.upper()
-            pdf.set_font(fn, 'B', size=500)
             
             if styl == "Kontur":
-                # NAJBARDZIEJ AGRESYWNA METODA: RĘCZNE NADPISANIE STRUKTURY PDF
-                pdf.set_draw_color(r, g, b)
-                pdf.set_line_width(0.7)
-                # Ustawiamy kolor tekstu na biały (tło) i używamy komendy do obrysu
                 pdf.set_text_color(255, 255, 255)
-                # Wymuszamy tryb renderowania tekstu 1 (tylko obrys) przez surową komendę PDF
-                pdf._out("1 Tr") 
+                pdf.set_draw_color(r, g, b)
+                pdf.set_line_width(1)
+                pdf._out("1 Tr") # Włącz kontur
                 pdf.set_y(50)
                 pdf.cell(190, 210, txt, align='C')
-                pdf._out("0 Tr") # Powrót do normalnego trybu
+                pdf._out("0 Tr") # Wyłącz kontur (bardzo ważne!)
             else:
                 pdf.set_text_color(r, g, b)
                 pdf.set_y(50)
@@ -66,7 +96,7 @@ def create_pdf_brute_force(mode, items, col, za_co, data, tytul, styl):
     return bytes(pdf.output())
 
 # --- UI ---
-st.title("🚀 EduStudio Ultra v8.4 - Final")
+st.title("🚀 EduStudio Ultra v8.5")
 
 if 'liter_txt' not in st.session_state: st.session_state['liter_txt'] = "WITAJ"
 if 'dyp_imiona' not in st.session_state: st.session_state['dyp_imiona'] = "Jan Kowalski"
@@ -79,12 +109,10 @@ if nav == "🔠 Napisy":
         st.session_state['liter_txt'] = st.text_input("Hasło:", value=st.session_state['liter_txt'])
         kol_l = st.color_picker("Kolor:", "#6366f1")
         styl_l = st.radio("Styl:", ["Pełny", "Kontur"])
-        
-        name_list = [c for c in st.session_state['liter_txt'] if not c.isspace()]
-        if st.button("GENERUJ PDF"):
-            if name_list:
-                out_l = create_pdf_brute_force('lit', name_list, kol_l, "", "", "", styl_l)
-                st.download_button(f"📥 POBIERZ PDF", out_l, "napisy.pdf")
+        if st.button("GENERUJ NAPIS"):
+            name_list = [c for c in st.session_state['liter_txt'] if not c.isspace()]
+            out_n = create_pdf_final_fix('lit', name_list, kol_l, "", "", "", styl_l)
+            st.download_button("📥 POBIERZ PDF", out_n, "napisy.pdf")
     with c2:
         pierwsza = st.session_state['liter_txt'][0].upper() if st.session_state['liter_txt'] else "?"
         stroke = f"-webkit-text-stroke: 6px {kol_l}; color: white;" if styl_l == "Kontur" else f"color: {kol_l};"
@@ -97,21 +125,22 @@ else:
     
     colA, colB = st.columns(2)
     with colA:
-        st.session_state['dyp_imiona'] = st.text_area("Lista dzieci:", value=st.session_state['dyp_imiona'])
+        st.session_state['dyp_imiona'] = st.text_area("Uczniowie:", value=st.session_state['dyp_imiona'])
         final_tresc = st.text_area("Za co:", value=st.session_state.get('tresc_ai_final', 'za wzorową postawę'))
     with colB:
-        miejsc = st.text_input("Data:", "Leżajsk, 2026")
+        miejsc = st.text_input("Data i miasto:", "Leżajsk, 2026")
         kol_d = st.color_picker("Kolor:", "#f59e0b")
-        name_list_d = [i.strip() for i in st.session_state['dyp_imiona'].split('\n') if i.strip()]
         if st.button("GENERUJ DYPLOMY"):
-            out_d = create_pdf_brute_force('dyp', name_list_d, kol_d, final_tresc, miejsc, okazja, "")
+            u_list = [i.strip() for i in st.session_state['dyp_imiona'].split('\n') if i.strip()]
+            out_d = create_pdf_final_fix('dyp', u_list, kol_d, final_tresc, miejsc, okazja, "")
             st.download_button("📥 POBIERZ PDF", out_d, "dyplomy.pdf")
             
     p_imie = st.session_state['dyp_imiona'].split('\n')[0] if st.session_state['dyp_imiona'] else "Uczeń"
     st.markdown(f"""
         <div class="canvas-pro" style="border: 10px double {kol_d}">
-            <h2 style="color:{kol_d}; font-family: Arial;">{okazja.upper()}</h2>
-            <h1 style="color:{kol_d}; margin:30px 0; font-family: Arial;">{p_imie}</h1>
-            <p style="color:black; font-family: Arial;">za {final_tresc}</p>
+            <h2 style="color:{kol_d}; margin:0;">{okazja.upper()}</h2>
+            <p style="color:#666; margin:0;">dla</p>
+            <h1 style="color:{kol_d}; margin:15px 0;">{p_imie}</h1>
+            <p style="color:black; font-size:18px; text-align:center;">za {final_tresc}</p>
         </div>
     """, unsafe_allow_html=True)
