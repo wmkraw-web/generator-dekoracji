@@ -5,7 +5,6 @@ import os
 st.set_page_config(page_title="Generator Dekoracji PRO", layout="wide")
 
 def generate_full_wypas(text, style, color_choice):
-    # A4: 210 x 297 mm
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=False, margin=0)
     
@@ -29,26 +28,25 @@ def generate_full_wypas(text, style, color_choice):
         }
         r, g, b = colors.get(color_choice, (0, 0, 0))
         
-        # Ustawienie stylu (Kontury vs Pełne)
+        # Ustawienie renderowania
         if style == "Tylko kontury (do kolorowania)":
-            pdf.set_text_color(255, 255, 255) # Biały środek
-            pdf.set_draw_color(r, g, b)       # Kolorowe obramowanie
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_draw_color(r, g, b)
             pdf.set_line_width(1)
             pdf.set_render_mode("fill_and_stroke")
         else:
             pdf.set_text_color(r, g, b)
             pdf.set_render_mode("fill")
 
-        # Rozmiar czcionki - 700 pt to ok. 250mm wysokości
-        pdf.set_font(font_name, "B" if font_name=="Helvetica" else "", 700)
+        # Rozmiar 600 jest bezpieczniejszy dla A4
+        pdf.set_font(font_name, "B" if font_name=="Helvetica" else "", 600)
         
-        # Wyśrodkowanie: Cell na całą stronę
-        # x=0, y=0, w=210 (szerokość A4), h=297 (wysokość A4)
-        pdf.set_xy(0, 0)
-        pdf.cell(210, 297, char, border=0, align='C')
+        # --- KLUCZOWA POPRAWKA: POZYCJONOWANIE ---
+        # Ustawiamy kursor niżej (np. 60mm od góry), żeby litera nie wystawała poza stronę
+        pdf.set_xy(0, 50) 
+        pdf.cell(210, 200, char, border=0, align='C')
         
     return bytes(pdf.output())
-
 # --- INTERFEJS ---
 st.title("🎨 Profesjonalny Generator Napisów")
 
