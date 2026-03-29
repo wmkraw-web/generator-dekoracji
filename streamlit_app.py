@@ -16,53 +16,57 @@ OKAZJE = {
 # --- NOWOCZESNY DESIGN (WERSJA POPRAWIONA) ---
 st.markdown("""
     <style>
-    /* Naprawa kolorów zakładek */
+    /* 1. TŁO I OGÓLNE */
+    .main { background-color: #0e1117; } /* Ciemne tło dla dark mode */
+
+    /* 2. ZAKŁADKI - Wyraźne i czytelne */
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] { 
-        background-color: #f8f9fa; 
+        background-color: #262730; 
         border-radius: 12px 12px 0 0; 
         padding: 12px 25px;
-        border: 1px solid #e0e0e0;
-        color: #333 !important; /* Ciemny tekst na nieaktywnej zakładce */
+        color: #ffffff !important; /* Biały tekst na ciemnej, nieaktywnej zakładce */
     }
     .stTabs [aria-selected="true"] { 
         background-color: #FF4B4B !important; 
         color: white !important; 
-        border: 1px solid #FF4B4B !important;
     }
 
-    /* Przyciski - Napis w środku będzie teraz wyraźniejszy */
+    /* 3. PRZYCISKI - Mocny kontrast */
     div.stButton > button, div.stDownloadButton > button {
         border-radius: 12px !important;
         height: 3.5em !important;
         width: 100% !important;
-        font-weight: 800 !important; /* Grubszy tekst */
-        text-transform: uppercase !important;
-        transition: all 0.3s ease !important;
-        border: 2px solid #FF4B4B !important;
-        background-color: white !important;
-        color: #FF4B4B !important;
-    }
-
-    /* Efekt po najechaniu - przycisk robi się pełny */
-    div.stButton > button:hover {
-        background-color: #FF4B4B !important;
-        color: white !important;
+        font-weight: 800 !important;
+        background-color: #FF4B4B !important; /* Pełny czerwony */
+        color: white !important; /* Biały napis */
+        border: none !important;
     }
     
-    /* Przycisk pobierania - zielony i wyraźny */
     div.stDownloadButton > button {
-        border: 2px solid #28a745 !important;
-        color: #28a745 !important;
-    }
-    div.stDownloadButton > button:hover {
-        background-color: #28a745 !important;
-        color: white !important;
+        background-color: #28a745 !important; /* Pełny zielony dla pobierania */
     }
 
-    /* Naprawa białych tekstów w ciemnym motywie Streamlit */
-    h1, h2, h3, p, span { color: #f0f2f6 !important; }
-    .stMarkdown div p { color: #f0f2f6 !important; }
+    /* 4. PODGLĄD - Naprawiamy widoczność liter i dyplomów */
+    /* Litera w podglądzie */
+    .preview-box {
+        background-color: white !important;
+        border-radius: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 350px;
+    }
+    
+    /* Tekst wewnątrz białych ramek podglądu musi być CIEMNY */
+    .preview-text {
+        color: #1f1f1f !important;
+    }
+    
+    /* Napisy na białych elementach interfejsu */
+    .stMarkdown div p, .stMarkdown div h1, .stMarkdown div h2 {
+        color: inherit; /* Pozwól systemowi decydować, chyba że są w podglądzie */
+    }
     </style>
     """, unsafe_allow_html=True)
 
