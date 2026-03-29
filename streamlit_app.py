@@ -17,6 +17,8 @@ def gen_napis(tekst, kolor_hex, styl):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=False, margin=0)
     font_name = setup_font(pdf)
+    
+    # Konwersja hex na RGB
     r = int(kolor_hex.lstrip('#')[:2], 16)
     g = int(kolor_hex.lstrip('#')[2:4], 16)
     b = int(kolor_hex.lstrip('#')[4:6], 16)
@@ -28,6 +30,7 @@ def gen_napis(tekst, kolor_hex, styl):
             pdf.set_text_color(220, 220, 220)
         else:
             pdf.set_text_color(r, g, b)
+        
         pdf.set_font(font_name, size=600 if font_name == "Roboto" else 500)
         pdf.set_xy(0, 50)
         pdf.cell(210, 200, char, align='C')
@@ -91,9 +94,10 @@ with tab1:
         kol = st.color_picker("Kolor liter:", "#003366")
     with c3:
         staly = st.selectbox("Styl:", ["Pełny kolor", "Tylko kontury (szary)"])
+    
     if st.button("Generuj Napis"):
         out = gen_napis(txt, kol, staly)
-        st.download_button("📥 Pobierz Napis (PDF)", out, "napis.pdf", "application/pdf")
+        st.download_button("Pobierz Napis (PDF)", out, "napis.pdf", "application/pdf")
 
 with tab2:
     st.subheader("Seryjne generowanie dyplomów")
@@ -103,7 +107,7 @@ with tab2:
         if tryb == "Jeden uczeń":
             lista_imion = st.text_input("Imię i nazwisko:")
         else:
-            lista_imion = st.text_area("Wklej listę (jedno imię pod drugim):", "Jan Kowalski\nAnna Nowak\nOlaf Budowniczy")
+            lista_imion = st.text_area("Wklej listę (jedno imię pod drugim):", "Jan Kowalski\nAnna Nowak")
     
     with colB:
         d_za_co = st.text_area("Treść (za co):", "wzorową postawę i aktywny udział w zajęciach")
@@ -114,5 +118,15 @@ with tab2:
         if lista_imion:
             with st.spinner("Trwa generowanie plików..."):
                 pdf_dyplomy = gen_dyplomy_seryjne(lista_imion, d_za_co, d_data, d_kolor)
-                st.success(f"Gotowe! Wygenerowano dyplomy dla wszystkich osób z listy.")
-                st.download_button("📥 POBIERZ WSZYSTKIE DYPLOMY (JEDEN PDF)", pdf_dyplomy, "dyplomy_zbiorcze.pdf
+                st.success("Gotowe! Wygenerowano dyplomy.")
+                st.download_button(
+                    label="POBIERZ WSZYSTKIE DYPLOMY (JEDEN PDF)",
+                    data=pdf_dyplomy,
+                    file_name="dyplomy_zbiorcze.pdf",
+                    mime="application/pdf"
+                )
+        else:
+            st.error("Lista uczniów jest pusta!")
+
+with tab3:
+    st.write("Moduł w przygotowaniu...")
