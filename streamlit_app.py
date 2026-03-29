@@ -1,12 +1,17 @@
 import streamlit as st
-from fpdf import FPDF
 import os
 import random
+
+# --- INTELIGENTNY IMPORT FPDF ---
+try:
+    from fpdf import FPDF
+except ImportError:
+    st.error("Błąd: Biblioteka FPDF nie została znaleziona. Upewnij się, że w pliku requirements.txt jest wpis: fpdf2")
+    st.stop()
 
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="EduStudio Master 2026", layout="wide")
 
-# Wymuszamy styl, żeby ukryć błędy i upiększyć UI
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a !important; color: white !important; }
@@ -15,7 +20,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- BAZA RYMOWANEK ---
+# --- BAZA ---
 RYMOWANKI = {
     "Pasowanie na Ucznia": "Dzielny uczniu, ślubuj szczerze, w Twoją mądrość mocno wierzę!",
     "Dzień Kropki": "Mała kropka, wielka sprawa, to jest twórcza dziś zabawa!",
@@ -54,51 +59,48 @@ def generate_pdf(mode, items, col, za_co, data, tytul, styl):
                 pdf.set_y(50); pdf.cell(210, 210, name.upper(), align='C')
     return bytes(pdf.output())
 
-# --- MAIN UI ---
-st.title("🎓 EduStudio v9.2")
-nav = st.sidebar.radio("Menu", ["Napisy", "Dyplomy"])
+# --- UI ---
+if 'ai_text' not in st.session_state: st.session_state.ai_text = "Za wzorową postawę i uśmiech każdego dnia!"
 
-# BEZPIECZNE INICJOWANIE STANU
-if 'ai_text' not in st.session_state: st.session_state.ai_text = "Twoja rymowanka pojawi się tutaj..."
+st.title("🎓 EduStudio v9.3")
+nav = st.sidebar.radio("Menu", ["Napisy", "Dyplomy"])
 
 if nav == "Napisy":
     c1, c2 = st.columns([1, 1.5])
     with c1:
-        txt = st.text_input("Napis:", "WITAJ")
-        kol = st.color_picker("Kolor:", "#6366f1", key="k1")
+        txt = st.text_input("Hasło:", "WITAJ")
+        kol = st.color_picker("Kolor:", "#6366f1", key="k_nap")
         stl = st.radio("Styl:", ["Pełny", "Kontur"])
         if st.button("Generuj PDF"):
             out = generate_pdf('lit', [c for c in txt if not c.isspace()], kol, "", "", "", stl)
-            st.download_button("Pobierz", out, "napis.pdf")
+            st.download_button("Pobierz PDF", out, "napisy.pdf")
     with c2:
         char = txt[0].upper() if txt else "?"
         strk = f"-webkit-text-stroke: 4px {kol}; color: white;" if stl == "Kontur" else f"color: {kol};"
         st.markdown(f'<div class="canvas-pro"><h1 style="font-size:300px; {strk}">{char}</h1></div>', unsafe_allow_html=True)
 
 else:
-    okz = st.selectbox("Okazja:", list(RYMOWANKI.keys()))
+    okz = st.selectbox("Wybierz okazję:", list(RYMOWANKI.keys()))
     if st.button("✨ Generuj treść AI"):
         st.session_state.ai_text = RYMOWANKI[okz]
     
     colA, colB = st.columns(2)
     with colA:
         imiona = st.text_area("Lista dzieci:", "Jan Kowalski")
-        # Tu był błąd - teraz używamy bezpiecznej zmiennej
         tresc = st.text_area("Tekst dyplomu:", value=st.session_state.ai_text)
     with colB:
         dat = st.text_input("Data:", "Leżajsk, 2026")
-        k_d = st.color_picker("Kolor dyplomu:", "#f59e0b", key="k2")
+        k_d = st.color_picker("Kolor:", "#f59e0b", key="k_dyp")
         if st.button("Generuj Dyplomy"):
             u_l = [i.strip() for i in imiona.split('\n') if i.strip()]
             out_d = generate_pdf('dyp', u_l, k_d, tresc, dat, okz, "")
-            st.download_button("Pobierz PDF", out_d, "dyplomy.pdf")
+            st.download_button("Pobierz dyplomy", out_d, "dyplomy.pdf")
             
-    # BEZPIECZNY PODGLĄD (Naprawa błędu ze screena)
-    p_imie = imiona.split('\n')[0] if imiona else "Imię Nazwisko"
+    p_imie = imiona.split('\n')[0] if imiona else "Uczeń"
     st.markdown(f"""
         <div class="canvas-pro" style="border: 10px double {k_d}">
             <h2 style="color:{k_d}">{okz.upper()}</h2>
             <h1 style="color:{k_d}; margin:20px 0;">{p_imie}</h1>
-            <p style="color:black; text-align:center;">za {tresc}</p>
+            <p style="color:black; text-align:center; padding:0 20px;">za {tresc}</p>
         </div>
     """, unsafe_allow_html=True)
