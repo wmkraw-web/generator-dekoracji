@@ -1,199 +1,161 @@
 import streamlit as st
 from fpdf import FPDF
 import os
-import random
 
-# --- CONFIG & MODERN THEME FORCING ---
-st.set_page_config(page_title="EduMaster Studio v5.0", layout="wide", page_icon="✨")
+# --- CONFIGURATION ---
+st.set_page_config(page_title="MagicColor Studio Ultra", layout="wide", page_icon="🎨")
 
-# Brutalne wymuszenie jasnego motywu, aby usunąć czarne pola raz na zawsze
+# --- FORSOWANIE DESIGNU XXI WIEKU ---
 st.markdown("""
     <style>
-    /* Globalne wymuszenie jasnych kolorów */
-    .stApp { background-color: white !important; color: #1e293b !important; }
-    h1, h2, h3, h4, h5, h6, p, label { color: #1e293b !important; }
+    /* Usuwanie szarych pól i ustawienie czystego tła */
+    .stApp { background-color: #f1f5f9 !important; }
     
-    /* Naprawa kontenerów i tła */
-    div[data-testid="stVerticalBlock"], div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: white !important;
+    /* Naprawa kontenerów - koniec z szarymi blokami */
+    [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: transparent !important;
         border: none !important;
+        box-shadow: none !important;
     }
-    
-    /* Nowoczesny panel edytora */
+
+    /* Nowoczesna karta edytora - biała, czysta, z cieniem */
     .editor-card {
-        background: #f8fafc;
-        border-radius: 24px;
-        padding: 40px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-    }
-    
-    /* Płótno podglądu */
-    .canvas {
         background: white !important;
-        border-radius: 20px;
-        padding: 50px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-        color: black;
-        min-height: 500px;
+        border-radius: 20px !important;
+        padding: 30px !important;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06) !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #1e293b !important;
+    }
+
+    /* Płótno podglądu - centralny punkt */
+    .canvas-pro {
+        background: white !important;
+        border-radius: 15px;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        padding: 40px;
+        border: 2px solid #e2e8f0;
+        min-height: 450px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        position: relative;
+        overflow: hidden;
     }
-    
-    /* Nowoczesne gradientowe przyciski */
-    div.stButton > button, div.stDownloadButton > button {
-        background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
+
+    /* Przyciski Akcji */
+    div.stButton > button {
+        background: #1e293b !important;
         color: white !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
         border: none !important;
-        border-radius: 12px !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        height: 3.5em !important;
-        transition: 0.3s !important;
+        height: 3em !important;
         width: 100% !important;
+        transition: 0.3s !important;
     }
-    div.stButton > button:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(99, 102, 241, 0.3); }
+    div.stButton > button:hover { background: #334155 !important; transform: translateY(-2px); }
+    
+    /* Przyciski Pobierania */
+    div.stDownloadButton > button {
+        background: #059669 !important;
+        color: white !important;
+        border-radius: 10px !important;
+        width: 100% !important;
+        border: none !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- BAZA OKAZJI (XXI WIEK) ---
-# Tutaj integrujemy Kalendarz Przedszkolaka i Święta Nietypowe
-BAZA_DYPLOMOW = {
-    "Pasowanie na Ucznia": {"title": "DYPLOM PASOWANIA", "sub": "NA UCZNIA KLASY PIERWSZEJ", "text": "uroczyste ślubowanie i wstąpienie do grona szkolnej społeczności", "col": "#1e3a8a"},
-    "Zakończenie Roku": {"title": "DYPLOM UZNANIA", "sub": "ZA WYBITNE OSIĄGNIĘCIA W NAUCE", "text": "bardzo dobre wyniki, wzorowe zachowanie i aktywny udział w życiu klasy", "col": "#b45309"},
-    "Super Przedszkolak": {"title": "DYPLOM SUPER ZUCHA", "sub": "DLA DZIELNEGO PRZEDSZKOLAKA", "text": "dzielne stawianie pierwszych kroków w przedszkolu i uśmiech każdego dnia", "col": "#047857"},
-    "🎂 Dzień Pluszowego Misia (25.11)": {"title": "DYPLOM MISIOWY", "sub": "PRZYJACIEL PLUSZOWEGO MISIA", "text": "udział w zabawach z okazji Dnia Pluszowego Misia i wielkie serce dla przytulanek", "col": "#854d0e"},
-    "🌍 Dzień Ziemi (22.04)": {"title": "EKADYPLOM", "sub": "MŁODY STRAŻNIK PLANETY", "text": "udział w akcjach ekologicznych i dbanie o nasze środowisko każdego dnia", "col": "#15803d"},
-    "💖 Dzień Rodziny": {"title": "PODZIĘKOWANIE", "sub": "DLA NAJWSPANIALSZYCH RODZICÓW", "text": "ogromną miłość, wsparcie, cierpliwość i codzienne starania", "col": "#be185d"},
-    "📕 Konkurs Recytatorski": {"title": "DYPLOM LAUREATA", "sub": "ZA ZAJĘCIE ........... MIEJSCA", "text": "piękną interpretację utworów, odwagę sceniczną i dbałość o kulturę słowa", "col": "#1d4ed8"}
+# --- BAZA OKAZJI ---
+BAZA = {
+    "🎓 Pasowanie": {"t": "DYPLOM PASOWANIA", "s": "NA UCZNIA KLASY PIERWSZEJ", "z": "uroczyste ślubowanie i wstąpienie do społeczności szkolnej", "c": "#1e3a8a"},
+    "🏆 Koniec Roku": {"t": "DYPLOM UZNANIA", "s": "ZA WYBITNE OSIĄGNIĘCIA", "z": "bardzo dobre wyniki w nauce oraz wzorowe zachowanie", "c": "#92400e"},
+    "🌸 Dzień Rodziców": {"t": "PODZIĘKOWANIE", "s": "DLA KOCHANYCH RODZICÓW", "z": "ogromną miłość, wsparcie i codzienne starania", "c": "#9d174d"},
+    "🧸 Dzień Misia": {"t": "PRZYJACIEL MISIA", "s": "CERTYFIKAT MIŁOŚNIKA PLUSZAKÓW", "z": "wspaniałą zabawę w Dniu Pluszowego Misia", "c": "#78350f"}
 }
 
-def load_font(pdf):
+def get_font(pdf):
     if os.path.exists("Roboto-Bold.ttf"):
         pdf.add_font("Roboto", "", "Roboto-Bold.ttf")
         return "Roboto"
     return "Helvetica"
 
-# Funkcja rysująca subtelny wzór tła (XXI WIEK DESIGN)
-def draw_bg_pattern(pdf, r, g, b):
+def draw_pro_border(pdf, r, g, b):
+    # Nowoczesna, minimalistyczna rama
     pdf.set_draw_color(r, g, b)
-    pdf.set_line_width(0.1)
-    for i in range(0, 300, 10):
-        # Delikatne kropki w tle
-        for j in range(0, 210, 10):
-            if random.random() > 0.8: # Losowe rozmieszczenie
-                pdf.ellipse(i, j, 0.5, 0.5, style='F')
+    pdf.set_line_width(0.5)
+    pdf.rect(7, 7, 283, 196) # Cienka linia zewnętrzna
+    pdf.set_line_width(2)
+    # Akcenty narożne
+    pdf.line(5, 5, 30, 5); pdf.line(5, 5, 5, 30) # GL
+    pdf.line(267, 5, 292, 5); pdf.line(292, 5, 292, 30) # GP
+    pdf.line(5, 177, 5, 202); pdf.line(5, 202, 30, 202) # DL
+    pdf.line(292, 177, 292, 202); pdf.line(267, 202, 292, 202) # DP
 
-def gen_master_pdf(mode, data_dict):
-    pdf = FPDF(orientation=data_dict['ori'], unit='mm', format='A4')
-    pdf.set_auto_page_break(auto=False, margin=0)
-    fn = load_font(pdf)
-    r, g, b = int(data_dict['col'][1:3], 16), int(data_dict['col'][3:5], 16), int(data_dict['col'][5:7], 16)
+def create_pdf(mode, data):
+    pdf = FPDF(orientation=data['ori'], unit='mm', format='A4')
+    fn = get_font(pdf)
+    r, g, b = int(data['col'][1:3], 16), int(data['col'][3:5], 16), int(data['col'][5:7], 16)
 
-    for item in data_dict['items']:
+    for item in data['items']:
         pdf.add_page()
         if mode == "dyplomy":
-            # Tło i Nowoczesna Ramka
-            pdf.set_fill_color(r, g, b)
-            pdf.set_alpha(0.03) # Bardzo jasny odcień koloru motywu
-            draw_bg_pattern(pdf, r, g, b)
-            pdf.set_alpha(1.0)
-            
-            # Nowoczesna rama narożnikowa (gruba)
-            pdf.set_draw_color(r, g, b)
-            pdf.set_line_width(2.5)
-            # GL
-            pdf.line(8, 8, 38, 8); pdf.line(8, 8, 8, 38)
-            # GP
-            pdf.line(259, 8, 289, 8); pdf.line(289, 8, 289, 38)
-            # DL
-            pdf.line(8, 162, 8, 192); pdf.line(8, 192, 38, 192)
-            # DP
-            pdf.line(289, 162, 289, 192); pdf.line(259, 192, 289, 192)
-            
-            # --- Hierarchia Tekstu ---
-            # NAGŁÓWEK (PRO)
+            draw_pro_border(pdf, r, g, b)
+            # Treść
             pdf.set_text_color(r, g, b)
-            pdf.set_font(fn, size=55)
-            pdf.set_y(35); pdf.cell(0, 25, data_dict['title'], align='C', ln=1)
-            
-            # PODTYTUŁ (Lekki)
-            pdf.set_font(fn, size=16)
-            pdf.set_text_color(50, 50, 50)
-            pdf.cell(0, 10, data_dict['sub'], align='C', ln=1)
-            
-            # IMIĘ (GIGANT)
-            pdf.set_y(85)
-            pdf.set_font(fn, size=60)
-            pdf.set_text_color(r, g, b)
-            pdf.cell(0, 30, item.upper(), align='C', ln=1)
-            
-            # TREŚĆ (CZYTELNA)
-            pdf.set_y(125); pdf.set_text_color(30, 30, 30)
-            pdf.set_font(fn, size=22)
-            pdf.multi_cell(0, 12, f"za {data_dict['za_co']}", align='C')
-            
-            # STOPKA (ELEGANCKA)
-            pdf.set_y(178); pdf.set_font(fn, size=12)
-            pdf.set_x(30); pdf.cell(100, 10, f"Miejscowość i data: {data_dict['date']}")
-            pdf.set_x(175); pdf.cell(100, 10, "Podpis wychowawcy: ........................", align='L')
-            
-        else: # Tryb Liter A4
-            pdf.set_text_color(r, g, b)
-            pdf.set_font(fn, size=550 if fn == "Roboto" else 500)
-            pdf.set_xy(0, 45); pdf.cell(210, 200, item.upper(), align='C')
-            
+            pdf.set_font(fn, size=50); pdf.set_y(35); pdf.cell(0, 20, data['title'], align='C', ln=1)
+            pdf.set_font(fn, size=16); pdf.set_text_color(80, 80, 80); pdf.cell(0, 10, data['sub'], align='C', ln=1)
+            pdf.set_font(fn, size=55); pdf.set_text_color(r, g, b); pdf.set_y(85); pdf.cell(0, 30, item.upper(), align='C', ln=1)
+            pdf.set_font(fn, size=22); pdf.set_text_color(40, 40, 40); pdf.set_y(125); pdf.multi_cell(0, 12, f"za {data['za_co']}", align='C')
+            pdf.set_y(178); pdf.set_font(fn, size=12); pdf.set_x(25); pdf.cell(0, 10, f"Data: {data['date']}")
+            pdf.set_x(180); pdf.cell(0, 10, "Podpis: ............................")
+        else:
+            pdf.set_text_color(r, g, b); pdf.set_font(fn, size=550); pdf.set_xy(0, 45); pdf.cell(210, 200, item.upper(), align='C')
     return bytes(pdf.output())
 
-# --- INTERFEJS ---
-st.title("✨ EduMaster Studio PRO")
-st.caption("Profesjonalny kreator napisów i dyplomów XXI wieku")
+# --- UI ---
+st.title("🎨 MagicColor Studio Ultra")
 
-sidebar = st.sidebar.radio("NARZĘDZIE:", ["Napisy ścienne A4", "Dyplomy dla całej klasy"])
+nav = st.sidebar.radio("FUNKCJA", ["Napisy A4", "Dyplomy"])
 
-if sidebar == "Napisy ścienne A4":
+if nav == "Napisy A4":
     c1, c2 = st.columns([1, 1.5])
     with c1:
         st.markdown('<div class="editor-card">', unsafe_allow_html=True)
-        txt = st.text_input("Hasło napisu:", "WITAJ")
-        kol = st.color_picker("Kolor przewodni:", "#6366f1")
+        txt = st.text_input("Treść:", "WITAJ")
+        kol = st.color_picker("Kolor:", "#4f46e5")
         if st.button("GENERUJ NAPIS"):
-            pdf_n = gen_master_pdf("litery", {'items': [c for c in txt if not c.isspace()], 'col': kol, 'ori': 'P'})
-            st.download_button("POBIERZ NAPIS", pdf_n, "napis.pdf")
+            out = create_pdf("litery", {'items': [c for c in txt if not c.isspace()], 'col': kol, 'ori': 'P'})
+            st.download_button("POBIERZ PDF", out, "napis.pdf")
         st.markdown('</div>', unsafe_allow_html=True)
     with c2:
-        st.markdown(f'<div class="canvas"><h1 style="font-size:300px; color:{kol};">{txt[0].upper() if txt else "?"}</h1></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="canvas-pro"><h1 style="font-size:250px; color:{kol}; margin:0;">{txt[0].upper() if txt else "?"}</h1></div>', unsafe_allow_html=True)
 
-else: # Dyplomy
+else:
     st.markdown('<div class="editor-card">', unsafe_allow_html=True)
-    o1, o2 = st.columns(2)
+    o1, o2, o3 = st.columns([1, 1, 1])
     with o1:
-        wybor = st.selectbox("TEMAT OKAZJI:", list(BAZA_DYPLOMOW.keys()))
-        t_za_co = st.text_area("TREŚĆ (za co):", value=BAZA_DYPLOMOW[wybor]["text"])
+        wb = st.selectbox("Okazja:", list(BAZA.keys()))
+        t_za = st.text_area("Za co:", BAZA[wb]["z"])
     with o2:
-        t_imiona = st.text_area("LISTA UCZNIÓW (jeden pod drugim):", "Jan Kowalski\nAnna Nowak")
-        t_data = st.text_input("Miejscowość i data:", "Kraków, 2026")
+        t_im = st.text_area("Uczniowie:", "Jan Kowalski\nAnna Nowak")
+        t_dt = st.text_input("Data:", "29.03.2026")
+    with o3:
+        t_kl = st.color_picker("Kolor:", BAZA[wb]["c"])
+        if st.button("GENERUJ WSZYSTKIE"):
+            lst = [i.strip() for i in t_im.split('\n') if i.strip()]
+            out_d = create_pdf("dyplomy", {'items': lst, 'col': t_kl, 'title': BAZA[wb]["t"], 'sub': BAZA[wb]["s"], 'za_co': t_za, 'date': t_dt, 'ori': 'L'})
+            st.download_button("POBIERZ DYPLOMY", out_d, "dyplomy.pdf")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    b1, p1 = st.columns([1, 2])
-    with b1:
-        t_kol = st.color_picker("DOSTOSUJ KOLOR:", BAZA_DYPLOMOW[wybor]["col"])
-        if st.button("WYGENERUJ WSZYSTKIE DYPLOMY"):
-            lista = [i.strip() for i in t_imiona.split('\n') if i.strip()]
-            out_d = gen_master_pdf("dyplomy", {'items': lista, 'col': t_kol, 'title': BAZA_DYPLOMOW[wybor]["title"], 'sub': BAZA_DYPLOMOW[wybor]["sub"], 'za_co': t_za_co, 'date': t_data, 'ori': 'L'})
-            st.download_button("POBIERZ PACZKĘ PDF", out_d, "dyplomy.pdf")
-            st.success("Wygenerowano! Kliknij powyżej, aby zapisać plik.")
-            
-    with p1:
-        p_imię = t_imiona.split('\n')[0]
-        st.markdown(f"""
-            <div class="canvas" style="border: 2px solid {t_kol}; color: black;">
-                <h3 style="color:{t_kol}; margin-top:0;">{BAZA_DYPLOMOW[wybor]["title"]}</h3>
-                <small style="color:#555;">{BAZA_DYPLOMOW[wybor]["sub"]}</small>
-                <h1 style="color:{t_kol}; margin:40px 0;">{p_imię}</h1>
-                <p style="text-align:center; color:#333;">za {t_za_co}</p>
-            </div>
-        """, unsafe_allow_html=True)
+    # Podgląd dyplomu bez szarych pól
+    st.markdown(f"""
+        <div class="canvas-pro" style="border-top: 5px solid {t_kl};">
+            <h2 style="color:{t_kl}; margin:0;">{BAZA[wb]["t"]}</h2>
+            <small style="color:#64748b;">{BAZA[wb]["sub"]}</small>
+            <h1 style="color:{t_kl}; margin:30px 0;">{t_im.split('\\n')[0]}</h1>
+            <p style="text-align:center; color:#334155;">za {t_za}</p>
+        </div>
+    """, unsafe_allow_html=True)
