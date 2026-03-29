@@ -2,17 +2,24 @@ import streamlit as st
 from fpdf import FPDF
 import os
 
-# --- KONFIGURACJA ---
-st.set_page_config(page_title="Nauczycielskie Narzędzia PRO", layout="wide", page_icon="🍎")
+# --- STYLE I KONFIGURACJA ---
+st.set_page_config(page_title="MagicColor Educator PRO", layout="wide", page_icon="🎨")
 
-# Baza okazji - Teksty i kolory
+# Custom CSS dla lepszego wyglądu
+st.markdown("""
+    <style>
+    .main { background-color: #f5f7f9; }
+    .stButton>button { width: 100%; border-radius: 20px; height: 3em; background-color: #FF4B4B; color: white; }
+    .stDownloadButton>button { width: 100%; border-radius: 20px; background-color: #28a745; color: white; }
+    </style>
+    """, unsafe_allow_html=True)
+
 OKAZJE = {
-    "Własna (wpisz ręcznie)": {"tekst": "", "kolor": "#000000"},
-    "Pasowanie na Ucznia": {"tekst": "uroczyste ślubowanie i wstąpienie do grona społeczności szkolnej", "kolor": "#003366"},
-    "Dzień Mamy i Taty": {"tekst": "ogromne serce, miłość i codzienne wsparcie", "kolor": "#E6007E"},
-    "Zakończenie Roku": {"tekst": "bardzo dobre wyniki w nauce oraz wzorowe zachowanie", "kolor": "#D4AF37"},
-    "Konkurs Recytatorski": {"tekst": "piękną interpretację utworów poetyckich i odwagę sceniczną", "kolor": "#228B22"},
-    "Super Przedszkolak": {"tekst": "dzielne stawianie pierwszych kroków w przedszkolu", "kolor": "#FF8C00"}
+    "🌟 Pasowanie na Ucznia": {"tekst": "uroczyste ślubowanie i wstąpienie do grona społeczności szkolnej", "kolor": "#003366", "symbol": "🎓"},
+    "❤️ Dzień Mamy i Taty": {"tekst": "ogromne serce, miłość i codzienne wsparcie w każdej chwili", "kolor": "#E6007E", "symbol": "🌸"},
+    "🏆 Zakończenie Roku": {"tekst": "bardzo dobre wyniki w nauce oraz wzorowe zachowanie w roku szkolnym", "kolor": "#D4AF37", "symbol": "🎖️"},
+    "🎤 Konkurs Recytatorski": {"tekst": "piękną interpretację utworów poetyckich i odwagę sceniczną", "kolor": "#228B22", "symbol": "📜"},
+    "🎈 Super Przedszkolak": {"tekst": "dzielne stawianie pierwszych kroków w przedszkolu i uśmiech każdego dnia", "kolor": "#FF8C00", "symbol": "🧸"}
 }
 
 def setup_font(pdf):
@@ -22,105 +29,116 @@ def setup_font(pdf):
         return "Roboto"
     return "Helvetica"
 
-# --- GENERATOR LITER A4 ---
-def gen_napis(tekst, kolor_hex, styl):
-    pdf = FPDF(orientation='P', unit='mm', format='A4')
-    pdf.set_auto_page_break(auto=False, margin=0)
-    font_name = setup_font(pdf)
-    r = int(kolor_hex.lstrip('#')[:2], 16)
-    g = int(kolor_hex.lstrip('#')[2:4], 16)
-    b = int(kolor_hex.lstrip('#')[4:6], 16)
-
-    for char in tekst.upper():
-        if char.isspace(): continue
-        pdf.add_page()
-        if styl == "Tylko kontury (szary)":
-            pdf.set_text_color(220, 220, 220)
-        else:
-            pdf.set_text_color(r, g, b)
-        pdf.set_font(font_name, size=600 if font_name == "Roboto" else 500)
-        pdf.set_xy(0, 55)
-        pdf.cell(210, 200, char, align='C')
-    return bytes(pdf.output())
-
-# --- GENERATOR DYPLOMÓW ---
-def gen_dyplomy_seryjne(lista_imion, za_co, data, kolor_ramki):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
-    font_name = setup_font(pdf)
-    r = int(kolor_ramki.lstrip('#')[:2], 16)
-    g = int(kolor_ramki.lstrip('#')[2:4], 16)
-    b = int(kolor_ramki.lstrip('#')[4:6], 16)
-
-    imiona = [i.strip() for i in lista_imion.split('\n') if i.strip()]
-
-    for imie in imiona:
-        pdf.add_page()
-        pdf.set_line_width(2)
-        pdf.set_draw_color(r, g, b)
-        pdf.rect(10, 10, 277, 190)
-        
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font(font_name, size=50)
-        pdf.set_y(40)
-        pdf.cell(0, 20, "DYPLOM", align='C', ln=1)
-        
-        pdf.set_font(font_name, size=20)
-        pdf.cell(0, 15, "dla", align='C', ln=1)
-        
-        pdf.set_font(font_name, size=40)
-        pdf.set_text_color(r, g, b)
-        pdf.cell(0, 30, imie, align='C', ln=1)
-        
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font(font_name, size=22)
-        pdf.set_y(120)
-        pdf.multi_cell(0, 12, f"za {za_co}", align='C')
-        
-        pdf.set_y(170)
-        pdf.set_font(font_name, size=12)
-        pdf.set_x(20)
-        pdf.cell(0, 10, f"Data: {data}", align='L')
-        pdf.set_x(200)
-        pdf.cell(0, 10, "Podpis: ........................", align='L')
+# --- FUNKCJE GENERUJĄCE ---
+def draw_diploma_content(pdf, imie, za_co, data, kolor, font_name, symbol=""):
+    r, g, b = int(kolor.lstrip('#')[:2], 16), int(kolor.lstrip('#')[2:4], 16), int(kolor.lstrip('#')[4:6], 16)
+    pdf.add_page()
     
-    return bytes(pdf.output())
+    # Podwójna ramka
+    pdf.set_line_width(1.5)
+    pdf.set_draw_color(r, g, b)
+    pdf.rect(10, 10, 277, 190)
+    pdf.set_line_width(0.5)
+    pdf.rect(13, 13, 271, 184)
 
-# --- INTERFEJS GŁÓWNY ---
-st.title("🍎 Centrum Nauczyciela PRO")
-tab1, tab2 = st.tabs(["🔠 Wielkie Litery A4", "🏆 Kreator Dyplomów"])
+    # Nagłówek
+    pdf.set_text_color(r, g, b)
+    pdf.set_font(font_name, size=60)
+    pdf.set_y(35)
+    pdf.cell(0, 25, "DYPLOM", align='C', ln=1)
+    
+    # Symbol
+    pdf.set_font("Helvetica", size=40) # Standard dla emoji/symboli
+    pdf.cell(0, 20, symbol, align='C', ln=1)
+
+    # Treść
+    pdf.set_text_color(40, 40, 40)
+    pdf.set_font(font_name, size=20)
+    pdf.cell(0, 15, "dla", align='C', ln=1)
+    
+    pdf.set_font(font_name, size=45)
+    pdf.set_text_color(r, g, b)
+    pdf.cell(0, 25, imie, align='C', ln=1)
+    
+    pdf.set_text_color(60, 60, 60)
+    pdf.set_font(font_name, size=22)
+    pdf.set_y(125)
+    pdf.multi_cell(0, 12, f"za {za_co}", align='C')
+    
+    # Stopka
+    pdf.set_y(175)
+    pdf.set_font(font_name, size=12)
+    pdf.set_x(25)
+    pdf.cell(100, 10, f"Data: {data}", align='L')
+    pdf.set_x(170)
+    pdf.cell(100, 10, "Podpis wychowawcy: ........................", align='L')
+
+# --- INTERFEJS ---
+st.title("🚀 MagicColor Educator PRO")
+
+tab1, tab2 = st.tabs(["🔠 Wielkie Napisy A4", "📜 Kreator Dyplomów"])
 
 with tab1:
-    st.subheader("Dekoracje na gazetki")
-    c1, c2, c3 = st.columns([2,1,1])
-    with c1:
-        txt = st.text_input("Wpisz hasło:", "WITAJ")
-    with c2:
-        kol = st.color_picker("Kolor liter:", "#003366")
-    with c3:
-        staly = st.selectbox("Styl:", ["Pełny kolor", "Tylko kontury (szary)"])
-    if st.button("Generuj Napis"):
-        out_n = gen_napis(txt, kol, staly)
-        st.download_button("Pobierz Napis (PDF)", out_n, "napis.pdf")
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.subheader("⚙️ Ustawienia")
+        napis_txt = st.text_input("Hasło dekoracji:", "WITAJ")
+        napis_kolor = st.color_picker("Kolor główny:", "#FF4B4B")
+        napis_styl = st.selectbox("Wariant:", ["Pełny", "Kontur (oszczędny)"])
+        gen_btn = st.button("Przygotuj Napis")
+    
+    with col2:
+        st.subheader("👁️ Podgląd kartki")
+        # Tu tworzymy wizualną symulację strony A4 w Streamlit
+        st.markdown(f"""
+            <div style="border: 2px solid #ddd; background: white; height: 400px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                <h1 style="font-size: 200px; color: {napis_kolor}; margin: 0; font-family: sans-serif;">
+                    {napis_txt[0] if napis_txt else "?"}
+                </h1>
+            </div>
+            <p style="text-align: center; color: gray;">(Podgląd pierwszej litery)</p>
+        """, unsafe_allow_html=True)
 
 with tab2:
-    st.subheader("Seryjne dyplomy na każdą okazję")
-    okazja = st.selectbox("Wybierz okazję:", list(OKAZJE.keys()))
+    col_cfg, col_pre = st.columns([1, 1])
     
-    colA, colB = st.columns(2)
-    with colA:
-        tryb = st.radio("Tryb:", ["Jeden uczeń", "Lista uczniów"])
-        if tryb == "Jeden uczeń":
-            imiona_inp = st.text_input("Imię i nazwisko:")
-        else:
-            imiona_inp = st.text_area("Lista (imię pod imieniem):", "Jan Kowalski\nAnna Nowak")
-    
-    with colB:
-        tekst_za_co = st.text_area("Treść (za co):", value=OKAZJE[okazja]["tekst"])
-        data_inp = st.text_input("Data:", "2026")
-        kol_d = st.color_picker("Kolor motywu:", value=OKAZJE[okazja]["kolor"])
+    with col_cfg:
+        st.subheader("🖋️ Dane Dyplomu")
+        okazja_sel = st.selectbox("Wybierz motyw:", list(OKAZJE.keys()))
+        
+        d_imie = st.text_input("Imię i nazwisko (lub lista):", "Jan Kowalski")
+        d_za_co = st.text_area("Treść wyróżnienia:", value=OKAZJE[okazja_sel]["tekst"])
+        
+        c_a, c_b = st.columns(2)
+        with c_a: d_data = st.text_input("Data:", "29 marca 2026")
+        with c_b: d_kolor = st.color_picker("Kolor motywu:", OKAZJE[okazja_sel]["kolor"])
+        
+        d_btn = st.button("Wygeneruj Dyplomy")
 
-    if st.button("Generuj Dyplomy"):
-        if imiona_inp:
-            out_d = gen_dyplomy_seryjne(imiona_inp, tekst_za_co, data_inp, kol_d)
-            st.success("Wygenerowano!")
-            st.download_button("Pobierz Dyplomy (PDF)", out_d, "dyplomy.pdf")
+    with col_pre:
+        st.subheader("🖼️ Podgląd dyplomu")
+        st.markdown(f"""
+            <div style="border: 5px double {d_kolor}; padding: 20px; background: white; text-align: center; border-radius: 10px;">
+                <h4 style="color: {d_kolor}; margin-bottom: 0;">DYPLOM</h4>
+                <p style="font-size: 10px;">dla</p>
+                <h2 style="color: {d_kolor}; margin: 10px 0;">{d_imie.split('\\n')[0]}</h2>
+                <p style="font-size: 14px; color: #444;">za {d_za_co}</p>
+                <br>
+                <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                    <span>Data: {d_data}</span>
+                    <span>........................<br>Podpis</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+# --- LOGIKA PDF ---
+if d_btn:
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    f_name = setup_font(pdf)
+    imiona = d_imie.split('\n')
+    for imie in imiona:
+        if imie.strip():
+            draw_diploma_content(pdf, imie.strip(), d_za_co, d_data, d_kolor, f_name, OKAZJE[okazja_sel]["symbol"])
+    
+    st.success("✨ Dyplomy wygenerowane pomyślnie!")
+    st.download_button("📥 POBIERZ PACZKĘ PDF", bytes(pdf.output()), "dyplomy_pro.pdf")
